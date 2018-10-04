@@ -24,7 +24,7 @@ type MemEntry struct {
 }
 
 const (
-	MIN_LIST_SIZE	= 2
+	MIN_LIST_SIZE	= 4
 	PING_TIMEOUT	= time.Second *1 
 )
 
@@ -231,7 +231,7 @@ func sendPing() {
 	for {
 		MemshipNum := len(MembershipList)
 		if MemshipNum >= MIN_LIST_SIZE {
-			var receiverList = make([]string, 1)
+			var receiverList = make([]string, 3)
 			formatTimeStr := time.Unix(time.Now().Unix(), 0).Format("2006-01-02 15:04:05")
 			piggyList := make([]MemEntry, 0)
 			JoinMessage := MesInfoEntry{
@@ -241,8 +241,8 @@ func sendPing() {
 				PgyBackList:	piggyList,
 			}
 			receiverList[0] = MembershipList[(getIx()+1)%MemshipNum].IpAddr
-			//receiverList[1] = MembershipList[(getIx()+2)%MemshipNum].IpAddr
-			//receiverList[2] = MembershipList[(getIx()+3)%MemshipNum].IpAddr
+			receiverList[1] = MembershipList[(getIx()+2)%MemshipNum].IpAddr
+			receiverList[2] = MembershipList[(getIx()+3)%MemshipNum].IpAddr
 			sendMessage(JoinMessage, receiverList, MessagePort)
 		}
 		time.Sleep(PING_TIMEOUT)
@@ -381,5 +381,3 @@ func main() {
 	}
 
 }
-
-
