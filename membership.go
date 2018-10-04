@@ -219,10 +219,10 @@ func introAddNode() {
 /*
  * Get index of current host
  */
-//func getIx(targetIP string) int {
- func getIx() int {
+func getIx(targetIP string) int {
+//func getIx() int {
 	for i, element := range MembershipList {
-		if LocalIp == element.IpAddr {
+		if targetIP == element.IpAddr {
 			return i
 		}
 	}
@@ -246,9 +246,9 @@ func sendPing() {
 				Type:			"PING",
 				PgyBackList:	piggyList,
 			}
-			receiverList[0] = MembershipList[(getIx()+1)%MemshipNum].IpAddr
-			receiverList[1] = MembershipList[(getIx()+2)%MemshipNum].IpAddr
-			receiverList[2] = MembershipList[(getIx()+3)%MemshipNum].IpAddr
+			receiverList[0] = MembershipList[(getIx(LocalIp)+1)%MemshipNum].IpAddr
+			receiverList[1] = MembershipList[(getIx(LocalIp)+2)%MemshipNum].IpAddr
+			receiverList[2] = MembershipList[(getIx(LocalIp)+3)%MemshipNum].IpAddr
 			sendMessage(JoinMessage, receiverList, MessagePort)
 		}
 		time.Sleep(PING_PERIOD)
@@ -259,7 +259,7 @@ func sendPing() {
  * Function to give the relative location of the host with respect to the current node in the ML
  */
 func getRelativeIx(targetIP string) int {
-	localIx := getIx()
+	localIx := getIx(LocalIp)
 	MemshipNum := len(MembershipList)
 	if strings.Compare(MembershipList[(localIx+1)%MemshipNum].IpAddr, targetIP) == 0 {
 		return 1
@@ -281,21 +281,25 @@ func checkAck(relativeIx int) {
 		time.Sleep(100 * time.Millisecond)
 	}
 
-	relativeIP := MembershipList[(getIx()+relativeIx)%len(MembershipList)].IpAddr
+	relativeIP := MembershipList[(getIx(LocalIp)+relativeIx)%len(MembershipList)].IpAddr
 
 	ACKtimers[relativeIx-1] = time.NewTimer(ACK_TIMEOUT)
 	<-ACKtimers[relativeIx-1].C 	// waiting to be triggered
 
 	mutex.Lock()
 	if len(MembershipList) >= MIN_LIST_SIZE && getRelativeIx(relativeIP) == relativeIx && resetTimerFlags[relativeIx-1] != 1 {
-		node := MemEntry{MembershipList[(getIx()+relativeIx)%len(MembershipList)].Id, relativeIP}
+		/* Failure detected first time */
+		fmt.Println("Failure detected at IpAddr : ", relativeIP)
 		PiggybackedList = append(PiggybackedList, node)
-		fmt.Println("Failure detected at IpAddr : ", )
+		/* Update MembershipList */
+		targetIx := getIx(relativeIP)
+		MembershipList = append(MembershipList[:targetIx], MembershipList[targetIx+1:]...)
+		
 	}
 	// None of of the Events should be updating the MembershipList , only then this condition would be set.
 	// Reset all the other timers (which the current node is monitoring) as well if the above condition is met
 	if resetTimerFlags[relativeIx-1] == 0 {
-		fmt.Println("Force stopping other timers " + string(relativeIx))
+		fmt.Println("Force stopping other timers :", string(relativeIx))
 		for i := 1; i < 3; i++ {
 			resetTimerFlags[i] = 1
 			ACKtimers[i].Reset(0)
