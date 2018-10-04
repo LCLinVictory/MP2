@@ -353,7 +353,7 @@ func listenMessages() {
 			fmt.Println("Receive ACK from :", msg.IpAddr)
 			relativeIx := getRelativeIx(msg.IpAddr)
 			if relativeIx != -1 {
-				ACKtimers[relativeIx].Reset(ACK_TIMEOUT)
+				ACKtimers[relativeIx - 1].Reset(ACK_TIMEOUT)
 			}
 		}
 
