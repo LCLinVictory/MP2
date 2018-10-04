@@ -263,9 +263,9 @@ func getRelativeIx(targetIP string) int {
 	MemshipNum := len(MembershipList)
 	if strings.Compare(MembershipList[(localIx+1)%MemshipNum].IpAddr, targetIP) == 0 {
 		return 1
-	} else if strings.Compare(membershipGroup[(localIx+2)%MemshipNum].IpAddr, targetIP) == 0 {
+	} else if strings.Compare(MembershipList[(localIx+2)%MemshipNum].IpAddr, targetIP) == 0 {
 		return 2
-	} else if strings.Compare(membershipGroup[(localIx+3)%MemshipNum].IpAddr, targetIP) == 0 {
+	} else if strings.Compare(MembershipList[(localIx+3)%MemshipNum].IpAddr, targetIP) == 0 {
 		return 3
 	}
 	return -1
@@ -295,7 +295,7 @@ func checkAck(relativeIx int) {
 	// None of of the Events should be updating the MembershipList , only then this condition would be set.
 	// Reset all the other timers (which the current node is monitoring) as well if the above condition is met
 	if resetTimerFlags[relativeIx-1] == 0 {
-		infolog.Print("Force stopping other timers " + string(relativeIx))
+		fmt.Println("Force stopping other timers " + string(relativeIx))
 		for i := 1; i < 3; i++ {
 			resetTimerFlags[i] = 1
 			ACKtimers[i].Reset(0)
