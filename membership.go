@@ -290,9 +290,10 @@ func checkAck(relativeIx int) {
 	if len(MembershipList) >= MIN_LIST_SIZE && getRelativeIx(relativeIP) == relativeIx && resetTimerFlags[relativeIx-1] != 1 {
 		/* Failure detected first time */
 		fmt.Println("Failure detected at IpAddr : ", relativeIP)
+		targetIx := getIx(relativeIP)
+		node = MemEntry{MembershipList[targetIx].Id, relativeIP}
 		PiggybackedList = append(PiggybackedList, node)
 		/* Update MembershipList */
-		targetIx := getIx(relativeIP)
 		MembershipList = append(MembershipList[:targetIx], MembershipList[targetIx+1:]...)
 		
 	}
