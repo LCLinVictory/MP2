@@ -443,10 +443,13 @@ func main() {
 	ACKtimers[2].Stop()
 
 	go listenMessages()
+	go sendPing()
+	go checkAck(1)
+	go checkAck(2)
+	go checkAck(3)
 	if LocalIp == JoinIp {
 		introAddNode()
 	} else {
-		go sendPing()
 		go addToMemship()
 		listenToIntro()
 	}
