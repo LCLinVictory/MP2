@@ -256,6 +256,22 @@ func sendPing() {
 }
 
 /*
+ * Function to give the relative location of the host with respect to the current node in the ML
+ */
+func getRelativeIx(targetIP string) int {
+	localIx := getIx()
+	MemshipNum := len(MembershipList)
+	if strings.Compare(MembershipList[(localIx+1)%MemshipNum].IpAddr, targetIP) == 0 {
+		return 1
+	} else if strings.Compare(membershipGroup[(localIx+2)%MemshipNum].IpAddr, targetIP) == 0 {
+		return 2
+	} else if strings.Compare(membershipGroup[(localIx+3)%MemshipNum].IpAddr, targetIP) == 0 {
+		return 3
+	}
+	return -1
+}
+
+/*
  * This function would ...
  * (i+1)%N, (i+2)%N, (i+3)%N. N=Total number of nodesin the memeber. This method is called for relativeindex 1,2 and 3
  */
@@ -272,7 +288,7 @@ func checkAck(relativeIx int) {
 
 	mutex.Lock()
 	if len(MembershipList) >= MIN_LIST_SIZE && getRelativeIx(relativeIP) == relativeIx && resetTimerFlags[relativeIx-1] != 1 {
-		node := MesInfoEntry{MembershipList[(getIx()+relativeIx)%len(MembershipList)].Id, relativeIP}
+		node := MemEntry{MembershipList[(getIx()+relativeIx)%len(MembershipList)].Id, relativeIP}
 		PiggybackedList = append(PiggybackedList, node)
 		fmt.Println("Failure detected at IpAddr : ", )
 	}
@@ -282,7 +298,7 @@ func checkAck(relativeIx int) {
 		infolog.Print("Force stopping other timers " + string(relativeIx))
 		for i := 1; i < 3; i++ {
 			resetTimerFlags[i] = 1
-			timers[i].Reset(0)
+			ACKtimers[i].Reset(0)
 		}
 	} else {
 		resetTimerFlags[relativeIx-1] = 0
@@ -335,12 +351,9 @@ func listenMessages() {
 			sendMessage(JoinMessage, receiverList, MessagePort)
 		case "ACK":
 			fmt.Println("Receive ACK from :", msg.IpAddr)
-			if msg.Host == MembershipList[(getIx()+1)%len(MembershipList)].IpAddr {
-				ACKtimers[0].Reset(ACK_TIMEOUT)
-			} else if msg.Host == MembershipList[(getIx()+2)%len(MembershipList)].IpAddr {
-				ACKtimers[1].Reset(ACK_TIMEOUT)
-			} else if pkt.Host == MembershipList[(getIx()+3)%len(MembershipList)].IpAddr {
-				ACKtimers[2].Reset(ACK_TIMEOUT)
+			relativeIx := getRelativeIx(msg.IpAddr)
+			if relativeIx != -1 {
+				ACKtimers[relativeIx].Reset(ACK_TIMEOUT)
 			}
 		}
 
