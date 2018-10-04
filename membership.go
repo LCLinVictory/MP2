@@ -7,6 +7,7 @@ import (
 	"net"
 	"os"
 	"time"
+	"sync"
 	"bufio"
 	"strings"
 )
@@ -25,16 +26,20 @@ type MemEntry struct {
 
 const (
 	MIN_LIST_SIZE	= 4
-	PING_TIMEOUT	= time.Second *1 
+	PING_PERIOD		= time.Second * 1 
+	ACK_TIMEOUT		= time.Millisecond * 2000
 )
 
 var (
-	JoinIp         string = "172.22.158.138"
-	JoinPort       string = "9001"
-	MessagePort    string = "9002"
-	MembershipList        = make([]MemEntry, 0)
-	PiggybackedList         = make([]MemEntry, 0)
-	LocalIp        string = getLocalIp()
+	JoinIp			string = "172.22.158.138"
+	JoinPort		string = "9001"
+	MessagePort		string = "9002"
+	MembershipList 		   = make([]MemEntry, 0)
+	PiggybackedList		   = make([]MemEntry, 0)
+	LocalIp 		string = getLocalIp()
+	ACKtimers		[3]*time.Timer 
+	resetTimerFlags	[3]int
+	mutex           = &sync.Mutex{}
 )
 
 // https://blog.csdn.net/yxys01/article/details/78054757
@@ -214,7 +219,8 @@ func introAddNode() {
 /*
  * Get index of current host
  */
-func getIx() int {
+//func getIx(targetIP string) int {
+ func getIx() int {
 	for i, element := range MembershipList {
 		if LocalIp == element.IpAddr {
 			return i
@@ -225,7 +231,7 @@ func getIx() int {
 
 
 /*
- * This function sends Ping messages to next three successive neighbours every PING_TIMEOUT
+ * This function sends Ping messages to next three successive neighbours every PING_PERIOD
  */
 func sendPing() {
 	for {
@@ -245,8 +251,46 @@ func sendPing() {
 			receiverList[2] = MembershipList[(getIx()+3)%MemshipNum].IpAddr
 			sendMessage(JoinMessage, receiverList, MessagePort)
 		}
-		time.Sleep(PING_TIMEOUT)
+		time.Sleep(PING_PERIOD)
 	}
+}
+
+/*
+ * This function would ...
+ * (i+1)%N, (i+2)%N, (i+3)%N. N=Total number of nodesin the memeber. This method is called for relativeindex 1,2 and 3
+ */
+func checkAck(relativeIx int) {
+
+	for len(MembershipList) < MIN_LIST_SIZE {
+		time.Sleep(100 * time.Millisecond)
+	}
+
+	relativeIP := MembershipList[(getIx()+relativeIx)%len(MembershipList)].IpAddr
+
+	ACKtimers[relativeIx-1] = time.NewTimer(ACK_TIMEOUT)
+	<-ACKtimers[relativeIx-1].C 	// waiting to be triggered
+
+	mutex.Lock()
+	if len(MembershipList) >= MIN_LIST_SIZE && getRelativeIx(relativeIP) == relativeIx && resetTimerFlags[relativeIx-1] != 1 {
+		node := MesInfoEntry{MembershipList[(getIx()+relativeIx)%len(MembershipList)].Id, relativeIP}
+		PiggybackedList = append(PiggybackedList, node)
+		fmt.Println("Failure detected at IpAddr : ", )
+	}
+	// None of of the Events should be updating the MembershipList , only then this condition would be set.
+	// Reset all the other timers (which the current node is monitoring) as well if the above condition is met
+	if resetTimerFlags[relativeIx-1] == 0 {
+		infolog.Print("Force stopping other timers " + string(relativeIx))
+		for i := 1; i < 3; i++ {
+			resetTimerFlags[i] = 1
+			timers[i].Reset(0)
+		}
+	} else {
+		resetTimerFlags[relativeIx-1] = 0
+	}
+
+	mutex.Unlock()
+	go checkAck(relativeIx)
+
 }
 
 /*
@@ -291,6 +335,13 @@ func listenMessages() {
 			sendMessage(JoinMessage, receiverList, MessagePort)
 		case "ACK":
 			fmt.Println("Receive ACK from :", msg.IpAddr)
+			if msg.Host == MembershipList[(getIx()+1)%len(MembershipList)].IpAddr {
+				ACKtimers[0].Reset(ACK_TIMEOUT)
+			} else if msg.Host == MembershipList[(getIx()+2)%len(MembershipList)].IpAddr {
+				ACKtimers[1].Reset(ACK_TIMEOUT)
+			} else if pkt.Host == MembershipList[(getIx()+3)%len(MembershipList)].IpAddr {
+				ACKtimers[2].Reset(ACK_TIMEOUT)
+			}
 		}
 
 	}
@@ -370,6 +421,13 @@ func main() {
 	}
 	/* Init MembershipList */
 	MembershipList = append(MembershipList, entry)
+
+	ACKtimers[0] = time.NewTimer(ACK_TIMEOUT)
+	ACKtimers[1] = time.NewTimer(ACK_TIMEOUT)
+	ACKtimers[2] = time.NewTimer(ACK_TIMEOUT)
+	ACKtimers[0].Stop()
+	ACKtimers[1].Stop()
+	ACKtimers[2].Stop()
 
 	go listenMessages()
 	if LocalIp == JoinIp {
