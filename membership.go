@@ -384,7 +384,7 @@ func listenMessages() {
 			mutex.Unlock()
 
 		case "ACK":
-			fmt.Println("Receive ACK from :", msg.IpAddr)
+			fmt.Println("Receive ACK from :", msg.IpAddr, " --- MembershipList num : ", len(MembershipList))
 			relativeIx := getRelativeIx(msg.IpAddr)
 			if relativeIx != -1 {
 				ACKtimers[relativeIx - 1].Reset(ACK_TIMEOUT)
