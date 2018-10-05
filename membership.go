@@ -393,6 +393,14 @@ func listenMessages() {
 			if relativeIx != -1 {
 				ACKtimers[relativeIx - 1].Reset(ACK_TIMEOUT)
 			}
+
+		case "Leave":
+			/* Update MembershipList */
+			fmt.Println("Receive ACK from :", msg.IpAddr, " --- MembershipList num : ", len(MembershipList))
+			mutex.Lock()
+			targetIx := getIx(msg.IpAddr)
+			MembershipList = append(MembershipList[:targetIx], MembershipList[targetIx+1:]...)
+			mutex.Unlock()
 		}
 
 	}
@@ -402,7 +410,7 @@ func listenMessages() {
 func ProcessInput() {
 
 	if LocalIp == JoinIp {
-		introAddNode()
+		go introAddNode()
 	}
 
 	// https://blog.csdn.net/zzzz_ing/article/details/53206096
@@ -495,9 +503,9 @@ func main() {
 
 	go listenMessages()
 	go sendPing()
-	go checkAck(1)
-	go checkAck(2)
-	go checkAck(3)
+	for i := 1; i < 3; i++ {
+		go checkAck(i)
+	}
 
 	ProcessInput()
 }
