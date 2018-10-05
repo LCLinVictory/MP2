@@ -503,7 +503,7 @@ func main() {
 
 	go listenMessages()
 	go sendPing()
-	for i := 1; i < 3; i++ {
+	for i := 1; i <= 3; i++ {
 		go checkAck(i)
 	}
 
