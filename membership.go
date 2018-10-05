@@ -240,6 +240,9 @@ func sendPing() {
 			var receiverList = make([]string, 3)
 			formatTimeStr := time.Unix(time.Now().Unix(), 0).Format("2006-01-02 15:04:05")
 			piggyList := make([]MemEntry, 0)
+			if len(PiggybackedList) > 0 {
+				piggyList = PiggybackedList
+			}
 			JoinMessage := MesInfoEntry{
 				IpAddr:  		LocalIp,
 				Timestamp:		formatTimeStr,
@@ -284,7 +287,7 @@ func checkAck(relativeIx int) {
 	relativeIP := MembershipList[(getIx(LocalIp)+relativeIx)%len(MembershipList)].IpAddr
 
 	//ACKtimers[relativeIx-1] = time.NewTimer(ACK_TIMEOUT)
-	ACKtimers[relativeIx-1].Reset(ACK_TIMEOUT)
+	ACKtimers[relativeIx-1].Reset(ACK_TIMEOUT)	// !!!
 	<-ACKtimers[relativeIx-1].C 	// waiting to be triggered
 
 	mutex.Lock()
@@ -355,6 +358,31 @@ func listenMessages() {
 			}
 			receiverList[0] = msg.IpAddr
 			sendMessage(JoinMessage, receiverList, MessagePort)
+
+			/* Find target IpAddr in MembershipList */
+			mutex.Lock()
+			if len(msg.PgyBackList) > 0 {
+				for _, member := range msg.PgyBackList {
+					targetIx := getIx(member.IpAddr)
+					if ( targetIx != -1 && member.Id == MembershipList[targetIx].Id )  {
+						/* Update MembershipList */
+						MembershipList = append(MembershipList[:targetIx], MembershipList[targetIx+1:]...)
+					}
+					var pgbIx = -1
+					for i, element := range PiggybackedList {
+						if member.Id == element.Id {
+							pgbIx = i
+							break
+						}
+					}
+					if pgbIx != -1 {
+						/* Update PiggybackedList */
+						PiggybackedList = append(PiggybackedList[:pgbIx], PiggybackedList[pgbIx+1:]...)
+					}
+				}
+			}
+			mutex.Unlock()
+
 		case "ACK":
 			fmt.Println("Receive ACK from :", msg.IpAddr)
 			relativeIx := getRelativeIx(msg.IpAddr)
