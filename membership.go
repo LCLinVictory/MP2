@@ -401,6 +401,10 @@ func listenMessages() {
 
 func ProcessInput() {
 
+	if LocalIp == JoinIp {
+		introAddNode()
+	}
+
 	// https://blog.csdn.net/zzzz_ing/article/details/53206096
 	reader := bufio.NewReader(os.Stdin)
 
@@ -418,11 +422,20 @@ func ProcessInput() {
 		input = strings.Replace(input, "\n", "", -1)
 		switch input {
 		case "a":
-			listMembershipList()
+			if len(MembershipList) > 1 || LocalIp == JoinIp {
+				listMembershipList()
+			} else {
+				fmt.Println("You have not joined the network yet !")
+			}
 		case "b":
 			getID()
 		case "c":
-			addToMemship()
+			if LocalIp == JoinIp {
+				fmt.Println("You are the introducer! You are already in the network!")
+			} else {
+				go addToMemship()
+				go listenToIntro()
+
 		case "d":
 			leaveMemship()
 		}
@@ -464,13 +477,13 @@ func listMembershipList() {
 
 
 func main() {
+	/* Init MembershipList */
 	formatTimeStr := time.Unix(time.Now().Unix(), 0).Format("2006-01-02 15:04:05")
 	ip := LocalIp
 	entry := MemEntry{
 		Id:     ip + "+" + formatTimeStr,
 		IpAddr: ip,
 	}
-	/* Init MembershipList */
 	MembershipList = append(MembershipList, entry)
 
 	ACKtimers[0] = time.NewTimer(ACK_TIMEOUT)
@@ -485,11 +498,6 @@ func main() {
 	go checkAck(1)
 	go checkAck(2)
 	go checkAck(3)
-	if LocalIp == JoinIp {
-		introAddNode()
-	} else {
-		go addToMemship()
-		listenToIntro()
-	}
 
+	ProcessInput()
 }
