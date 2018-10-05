@@ -403,6 +403,11 @@ func listenMessages() {
 				MembershipList = append(MembershipList[:targetIx], MembershipList[targetIx+1:]...)
 			}
 			mutex.Unlock()
+			//os.Exit(0)
+			initMembershipList()
+			for i := 0; i < 3; i++ {
+				ACKtimers[i].Stop()
+			}
 		}
 
 	}
@@ -485,8 +490,7 @@ func listMembershipList() {
 	}
 }
 
-
-func main() {
+func initMembershipList() {
 	/* Init MembershipList */
 	formatTimeStr := time.Unix(time.Now().Unix(), 0).Format("2006-01-02 15:04:05")
 	ip := LocalIp
@@ -495,6 +499,11 @@ func main() {
 		IpAddr: ip,
 	}
 	MembershipList = append(MembershipList, entry)
+}
+
+func main() {
+
+	initMembershipList()
 
 	ACKtimers[0] = time.NewTimer(ACK_TIMEOUT)
 	ACKtimers[1] = time.NewTimer(ACK_TIMEOUT)
