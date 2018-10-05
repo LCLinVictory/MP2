@@ -283,7 +283,8 @@ func checkAck(relativeIx int) {
 
 	relativeIP := MembershipList[(getIx(LocalIp)+relativeIx)%len(MembershipList)].IpAddr
 
-	ACKtimers[relativeIx-1] = time.NewTimer(ACK_TIMEOUT)
+	//ACKtimers[relativeIx-1] = time.NewTimer(ACK_TIMEOUT)
+	ACKtimers[relativeIx-1].Reset(ACK_TIMEOUT)
 	<-ACKtimers[relativeIx-1].C 	// waiting to be triggered
 
 	mutex.Lock()
@@ -303,7 +304,7 @@ func checkAck(relativeIx int) {
 		fmt.Println("Force stopping other timers :", string(relativeIx))
 		for i := 1; i < 3; i++ {
 			resetTimerFlags[i] = 1
-			ACKtimers[i].Reset(0)
+			ACKtimers[i].Reset(0)		// !!!
 		}
 	} else {
 		resetTimerFlags[relativeIx-1] = 0
