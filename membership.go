@@ -435,7 +435,7 @@ func ProcessInput() {
 			} else {
 				go addToMemship()
 				go listenToIntro()
-
+			}
 		case "d":
 			leaveMemship()
 		}
