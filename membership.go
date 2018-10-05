@@ -243,7 +243,7 @@ func sendPing() {
 		if MemshipNum >= MIN_LIST_SIZE {
 			var receiverList = make([]string, 3)
 			formatTimeStr := time.Unix(time.Now().Unix(), 0).Format("2006-01-02 15:04:05")
-			JoinMessage := MesInfoEntry{
+			PingMessage := MesInfoEntry{
 				IpAddr:  		LocalIp,
 				Timestamp:		formatTimeStr,
 				Type:			"PING",
@@ -252,7 +252,7 @@ func sendPing() {
 			receiverList[0] = MembershipList[(getIx(LocalIp)+1)%MemshipNum].IpAddr
 			receiverList[1] = MembershipList[(getIx(LocalIp)+2)%MemshipNum].IpAddr
 			receiverList[2] = MembershipList[(getIx(LocalIp)+3)%MemshipNum].IpAddr
-			sendMessage(JoinMessage, receiverList, MessagePort)
+			sendMessage(PingMessage, receiverList, MessagePort)
 		}
 		time.Sleep(PING_PERIOD)
 	}
@@ -350,14 +350,14 @@ func listenMessages() {
 			var receiverList = make([]string, 1)
 			formatTimeStr := time.Unix(time.Now().Unix(), 0).Format("2006-01-02 15:04:05")
 			piggyList := make([]MemEntry, 0)
-			JoinMessage := MesInfoEntry{
+			ACKMessage := MesInfoEntry{
 				IpAddr:  		LocalIp,
 				Timestamp:		formatTimeStr,
 				Type:			"ACK",
 				PgyBackList:	piggyList,
 			}
 			receiverList[0] = msg.IpAddr
-			sendMessage(JoinMessage, receiverList, MessagePort)
+			sendMessage(ACKMessage, receiverList, MessagePort)
 
 			/* Find target IpAddr in MembershipList */
 			mutex.Lock()
@@ -367,17 +367,20 @@ func listenMessages() {
 					if ( targetIx != -1 && member.Id == MembershipList[targetIx].Id )  {
 						/* Update MembershipList */
 						MembershipList = append(MembershipList[:targetIx], MembershipList[targetIx+1:]...)
-					}
-					var pgbIx = -1
-					for i, element := range PiggybackedList {
-						if member.Id == element.Id {
-							pgbIx = i
-							break
+						PiggybackedList = append(PiggybackedList, member)
+
+					} else {
+						var pgbIx = -1
+						for i, element := range PiggybackedList {
+							if member.Id == element.Id {
+								pgbIx = i
+								break
+							}
 						}
-					}
-					if pgbIx != -1 {
-						/* Update PiggybackedList */
-						PiggybackedList = append(PiggybackedList[:pgbIx], PiggybackedList[pgbIx+1:]...)
+						if pgbIx != -1 {
+							/* Update PiggybackedList */
+							PiggybackedList = append(PiggybackedList[:pgbIx], PiggybackedList[pgbIx+1:]...)
+						}
 					}
 				}
 			}
