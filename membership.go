@@ -403,13 +403,6 @@ func listenMessages() {
 				MembershipList = append(MembershipList[:targetIx], MembershipList[targetIx+1:]...)
 			}
 			mutex.Unlock()
-			os.Exit(0)
-			/*
-			initMembershipList()
-			for i := 0; i < 3; i++ {
-				ACKtimers[i].Stop()
-			}
-			*/
 		}
 
 	}
@@ -455,6 +448,11 @@ func ProcessInput() {
 			}
 		case "d":
 			leaveMemship()
+			//os.Exit(0)
+			initMembershipList()
+			for i := 0; i < 3; i++ {
+				ACKtimers[i].Stop()
+			}
 		}
 	}
 }
