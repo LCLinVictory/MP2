@@ -396,10 +396,12 @@ func listenMessages() {
 
 		case "Leave":
 			/* Update MembershipList */
-			fmt.Println("Receive ACK from :", msg.IpAddr, " --- MembershipList num : ", len(MembershipList))
+			fmt.Println("Receive Leave from :", msg.IpAddr, " --- MembershipList num : ", len(MembershipList))
 			mutex.Lock()
 			targetIx := getIx(msg.IpAddr)
-			MembershipList = append(MembershipList[:targetIx], MembershipList[targetIx+1:]...)
+			if targetIx != -1 {
+				MembershipList = append(MembershipList[:targetIx], MembershipList[targetIx+1:]...)
+			}
 			mutex.Unlock()
 		}
 
