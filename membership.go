@@ -243,15 +243,11 @@ func sendPing() {
 		if MemshipNum >= MIN_LIST_SIZE {
 			var receiverList = make([]string, 3)
 			formatTimeStr := time.Unix(time.Now().Unix(), 0).Format("2006-01-02 15:04:05")
-			piggyList := make([]MemEntry, 0)
-			if len(PiggybackedList) > 0 {
-				piggyList = PiggybackedList
-			}
 			JoinMessage := MesInfoEntry{
 				IpAddr:  		LocalIp,
 				Timestamp:		formatTimeStr,
 				Type:			"PING",
-				PgyBackList:	piggyList,
+				PgyBackList:	PiggybackedList,
 			}
 			receiverList[0] = MembershipList[(getIx(LocalIp)+1)%MemshipNum].IpAddr
 			receiverList[1] = MembershipList[(getIx(LocalIp)+2)%MemshipNum].IpAddr
@@ -442,12 +438,16 @@ func ProcessInput() {
 		case "c":
 			if LocalIp == JoinIp {
 				fmt.Println("You are the introducer! You are already in the network!")
+			} else if len(MembershipList) > 1 {
+				fmt.Println("You are already in the network!")
 			} else {
 				go addToMemship()
 				go listenToIntro()
 			}
 		case "d":
-			leaveMemship()
+			if len(MembershipList) > 1 {
+				leaveMemship()
+			}
 			os.Exit(0)
 			/*
 			initMembershipList()
