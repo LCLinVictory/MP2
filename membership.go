@@ -128,11 +128,13 @@ func listenToIntro() {
 			fmt.Println("Can not decode during listenToIntro:", err)
 			os.Exit(1)
 		}
+		mutex.Lock()
 		if len(entryList) == 1 {
 			MembershipList = append(MembershipList, entryList[0])
 		} else {
 			MembershipList = entryList
 		}
+		mutex.Unlock()
 		fmt.Println("MembershipList in listenToIntro Now:", MembershipList)
 	}
 }
@@ -211,7 +213,9 @@ func introAddNode() {
 			IpAddr: ip,
 		}
 		/*check timestamp pass*/
+		mutex.Lock()
 		MembershipList = append(MembershipList, entry)
+		mutex.Unlock()
 		broadCast(entry)
 	}
 }
