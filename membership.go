@@ -12,8 +12,8 @@ import (
 	"sync"
 	"strings"
 	"math/rand"
-	"../mp1server/"
-	"../mp1client/"
+	"../mp1server"
+	"../mp1client"
 )
 
 type MesInfoEntry struct {
