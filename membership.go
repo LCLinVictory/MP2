@@ -351,7 +351,7 @@ func checkAck(relativeIx int) {
 	// None of of the Events should be updating the MembershipList , only then this condition would be set.
 	// Reset all the other timers (which the current node is monitoring) as well if the above condition is met
 	if resetTimerFlags[relativeIx-1] == 0 {
-		fmt.Println("Force stopping other timers :", string(relativeIx))
+		InfoLog.Println("Force stopping other timers :", string(relativeIx))
 		for i := 1; i < 3; i++ {
 			resetTimerFlags[i] = 1
 			ACKtimers[i].Reset(0)	// !!!
