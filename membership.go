@@ -526,9 +526,9 @@ func getGrepLog() {
 		return
 	}
 
-	IPList := make([]string, len(MembershipList))
+	var IPList = make([]string, len(MembershipList))
 	for i, element := range MembershipList {
-		tmpList[i] = element.IpAddr
+		IPList[i] = element.IpAddr
 	}
 
 	mp1client.RunClientmain(strMessage, IPList)
