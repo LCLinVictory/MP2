@@ -214,6 +214,7 @@ func introAddNode() {
 		}
 		/*check timestamp pass*/
 		mutex.Lock()
+		resetCorrespondingTimers()
 		MembershipList = append(MembershipList, entry)
 		mutex.Unlock()
 		broadCast(entry)
@@ -272,6 +273,15 @@ func getRelativeIx(targetIP string) int {
 		return 3
 	}
 	return -1
+}
+
+func resetCorrespondingTimers() {
+	resetTimerFlags[0] = 1
+	resetTimerFlags[1] = 1
+	resetTimerFlags[2] = 1
+	timers[0].Reset(0)
+	timers[1].Reset(0)
+	timers[2].Reset(0)
 }
 
 /*
@@ -366,7 +376,9 @@ func listenMessages() {
 					targetIx := getIx(member.IpAddr)
 					if ( targetIx != -1 && member.Id == MembershipList[targetIx].Id )  {
 						/* Update MembershipList */
+						resetCorrespondingTimers()
 						MembershipList = append(MembershipList[:targetIx], MembershipList[targetIx+1:]...)
+						/* Update PiggybackedList : append */
 						PiggybackedList = append(PiggybackedList, member)
 
 					} else {
@@ -378,7 +390,7 @@ func listenMessages() {
 							}
 						}
 						if pgbIx != -1 {
-							/* Update PiggybackedList */
+							/* Update PiggybackedList : delete */
 							PiggybackedList = append(PiggybackedList[:pgbIx], PiggybackedList[pgbIx+1:]...)
 						}
 					}
