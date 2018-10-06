@@ -1,0 +1,36 @@
+[ErrorInfo]2018/10/06 02:17:23 Fail to detect at IpAddr: 172.22.154.140
+[MemberInfo]2018/10/06 02:17:23 Detect! Node ID: 172.22.154.140+2018-10-06 02:17:21 fails!
+[MemberInfo]2018/10/06 02:17:37 Receive Fail Info! Node ID:  172.22.156.139+2018-10-06 02:14:56 fails
+[MemberInfo]2018/10/06 02:29:40 Receive leave meassage! Node IP: 172.22.154.139 leaves the group
+[MemberInfo]2018/10/06 02:29:43 Receive leave meassage! Node IP: 172.22.156.139 leaves the group
+[MemberInfo]2018/10/06 02:31:29 Receive Fail Info! Node ID:  172.22.154.140+2018-10-06 02:30:38 fails
+[ErrorInfo]2018/10/06 02:32:44 Fail to detect at IpAddr: 172.22.154.139
+[MemberInfo]2018/10/06 02:32:44 Detect! Node ID: 172.22.154.139+2018-10-06 02:30:31 fails!
+[ErrorInfo]2018/10/06 02:32:47 Fail to detect at IpAddr: 172.22.156.139
+[MemberInfo]2018/10/06 02:32:47 Detect! Node ID: 172.22.156.139+2018-10-06 02:30:34 fails!
+[ErrorInfo]2018/10/06 02:32:49 Fail to detect at IpAddr: 172.22.158.139
+[MemberInfo]2018/10/06 02:32:49 Detect! Node ID: 172.22.158.139+2018-10-06 02:30:36 fails!
+[ErrorInfo]2018/10/06 02:33:00 Fail to detect at IpAddr: 172.22.156.140
+[MemberInfo]2018/10/06 02:33:00 Detect! Node ID: 172.22.156.140+2018-10-06 02:30:39 fails!
+[ErrorInfo]2018/10/06 02:33:03 Fail to detect at IpAddr: 172.22.158.140
+[MemberInfo]2018/10/06 02:33:03 Detect! Node ID: 172.22.158.140+2018-10-06 02:30:41 fails!
+[ErrorInfo]2018/10/06 02:33:05 Fail to detect at IpAddr: 172.22.154.141
+[MemberInfo]2018/10/06 02:33:05 Detect! Node ID: 172.22.154.141+2018-10-06 02:30:44 fails!
+[ErrorInfo]2018/10/06 02:33:11 Fail to detect at IpAddr: 172.22.156.141
+[MemberInfo]2018/10/06 02:33:11 Detect! Node ID: 172.22.156.141+2018-10-06 02:30:54 fails!
+[ErrorInfo]2018/10/06 08:20:19 Fail to detect at IpAddr: 172.22.154.139
+[MemberInfo]2018/10/06 08:20:19 Detect! Node ID: 172.22.154.139+2018-10-06 08:10:43 fails!
+[ErrorInfo]2018/10/06 08:20:35 Fail to detect at IpAddr: 172.22.158.139
+[MemberInfo]2018/10/06 08:20:35 Detect! Node ID: 172.22.158.139+2018-10-06 08:10:53 fails!
+[ErrorInfo]2018/10/06 08:20:52 Fail to detect at IpAddr: 172.22.156.139
+[MemberInfo]2018/10/06 08:20:52 Detect! Node ID: 172.22.156.139+2018-10-06 08:10:50 fails!
+[MemberInfo]2018/10/06 09:01:03 Receive Fail Info! Node ID:  172.22.158.139+2018-10-06 08:27:17 fails
+[MemberInfo]2018/10/06 09:01:03 Receive Fail Info! Node ID:  172.22.156.139+2018-10-06 08:27:14 fails
+[MemberInfo]2018/10/06 09:49:50 Receive Fail Info! Node ID:  172.22.158.141+2018-10-06 08:27:36 fails
+[MemberInfo]2018/10/06 09:50:18 Receive Fail Info! Node ID:  172.22.154.140+2018-10-06 08:27:21 fails
+[ErrorInfo]2018/10/06 09:50:20 Fail to detect at IpAddr: 172.22.156.140
+[MemberInfo]2018/10/06 09:50:20 Detect! Node ID: 172.22.156.140+2018-10-06 08:27:23 fails!
+[ErrorInfo]2018/10/06 09:50:23 Fail to detect at IpAddr: 172.22.154.141
+[MemberInfo]2018/10/06 09:50:23 Detect! Node ID: 172.22.154.141+2018-10-06 08:27:27 fails!
+[ErrorInfo]2018/10/06 09:50:26 Fail to detect at IpAddr: 172.22.158.140
+[MemberInfo]2018/10/06 09:50:26 Detect! Node ID: 172.22.158.140+2018-10-06 08:27:25 fails!
