@@ -182,7 +182,7 @@ func broadCast(entry MemEntry) {
 
 // https://www.jb51.net/article/64705.htm
 func checkTs(Mentry MesInfoEntry) bool {
-	checkVal := false
+	checkVal := true
 	for _, member := range MembershipList {
 		if member.IpAddr == Mentry.IpAddr {
 			t1 := strings.Split(member.IpAddr, "+")[1]
@@ -190,7 +190,7 @@ func checkTs(Mentry MesInfoEntry) bool {
 			time1, err := time.Parse("2006-01-02 15:04:05", t1)
 			time2, err := time.Parse("2006-01-02 15:04:05", t2)
 			if err == nil && time1.Before(time2) {
-				checkVal = true
+				checkVal = false
 			}
 		}
 	}
