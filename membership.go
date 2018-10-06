@@ -30,7 +30,7 @@ const (
 	MIN_LIST_SIZE		= 4
 	PING_PERIOD			= time.Second * 1 
 	ACK_TIMEOUT			= time.Millisecond * 2000
-	PACKET_LOSS_RATE	= 0.3	// 0.0 ~ 1.0
+	PACKET_LOSS_RATE	= 0.0	// 0.0 ~ 1.0
 )
 
 var (
