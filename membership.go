@@ -565,7 +565,7 @@ func main() {
 	if err != nil {
 		fmt.Println("Error during create log file", err)
 		os.Exit(1)
-	
+	}
 	defer file.Close()
 	ACKtimers[0] = time.NewTimer(ACK_TIMEOUT)
 	ACKtimers[1] = time.NewTimer(ACK_TIMEOUT)
