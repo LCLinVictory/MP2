@@ -317,7 +317,7 @@ func checkAck(relativeIx int) {
 	}
 
 	mutex.Unlock()
-	go checkAck(relativeIx)
+	//go checkAck(relativeIx)
 
 }
 
