@@ -1,6 +1,8 @@
 package main
 
 import (
+	"log"
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -8,8 +10,8 @@ import (
 	"os"
 	"time"
 	"sync"
-	"bufio"
 	"strings"
+	"math/rand"
 )
 
 type MesInfoEntry struct {
@@ -25,9 +27,10 @@ type MemEntry struct {
 }
 
 const (
-	MIN_LIST_SIZE	= 4
-	PING_PERIOD		= time.Second * 1 
-	ACK_TIMEOUT		= time.Millisecond * 2000
+	MIN_LIST_SIZE		= 4
+	PING_PERIOD			= time.Second * 1 
+	ACK_TIMEOUT			= time.Millisecond * 2000
+	PACKET_LOSS_RATE	= 0.3	// 0.0 ~ 1.0
 )
 
 var (
@@ -40,6 +43,8 @@ var (
 	ACKtimers		[3]*time.Timer 
 	resetTimerFlags	[3]int
 	mutex           = &sync.Mutex{}
+	InfoLog *log.Logger
+	ErrorLog *log.Logger
 )
 
 // https://blog.csdn.net/yxys01/article/details/78054757
@@ -47,7 +52,7 @@ var (
 func getLocalIp() string {
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
-		fmt.Println("can not get the local ipAddr:", err)
+		ErrorLog.Println("can not get the local ipAddr:", err)
 		os.Exit(1)
 	}
 
@@ -68,23 +73,32 @@ func sendMessage(mesInfo MesInfoEntry, receiverList []string, port string) {
 	for _, receiverIP := range receiverList {
 		addr, err := net.ResolveUDPAddr("udp", receiverIP+":"+port)
 		if err != nil {
-			fmt.Println("Can not resolve the address:", err)
+			ErrorLog.Println("Can not resolve the address:", err)
 			os.Exit(1)
 		}
 
 		conn, err := net.DialUDP("udp", nil, addr)
 		if err != nil {
-			fmt.Println("Can not dial during sendMessage:", err)
+			ErrorLog.Println("Can not dial during sendMessage:", err)
 			os.Exit(1)
 		}
 		defer conn.Close()
 		err = json.NewEncoder(&buf).Encode(mesInfo)
 		if err != nil {
-			fmt.Println("can not encode into json:", err)
+			ErrorLog.Println("can not encode into json:", err)
 			os.Exit(1)
 		}
-		_, err = conn.Write(buf.Bytes())
-		//fmt.Println("In sendMessage: Write message =", string(buf.Bytes()))
+
+		/* Packet loss simulate */
+		rand.Seed(time.Now().UnixNano())
+		tmpflag := rand.Intn(100)
+		if tmpflag >= PACKET_LOSS_RATE * 100 {
+			_, err = conn.Write(buf.Bytes())
+			//fmt.Println("In sendMessage: Write message =", string(buf.Bytes()))
+		} else {
+			fmt.Println("Packet loss simulate --- PACKET_LOSS_RATE : ", PACKET_LOSS_RATE)
+		}
+
 	}
 }
 
@@ -113,29 +127,31 @@ func listenToIntro() {
 	}
 	conn, err := net.ListenUDP("udp", addr)
 	if err != nil {
-		fmt.Println("Can not listenUDP during listenToIntro:", err)
+		ErrorLog.Println("Can not listenUDP during listenToIntro:", err)
 		os.Exit(1)
 	}
 	defer conn.Close()
-	//fmt.Println("test!!!")
+	
 	for {
 		entryList := make([]MemEntry, 0)
 		buf := make([]byte, 1024)
 		n, _, err := conn.ReadFromUDP(buf)
 		err = json.NewDecoder(bytes.NewReader(buf[:n])).Decode(&entryList)
-		//fmt.Println("IN listenToIntro:", entryList)
+		
 		if err != nil {
-			fmt.Println("Can not decode during listenToIntro:", err)
+			ErrorLog.Println("Can not decode during listenToIntro:", err)
 			os.Exit(1)
 		}
 		mutex.Lock()
 		if len(entryList) == 1 {
 			MembershipList = append(MembershipList, entryList[0])
+			InfoLog.Println("Member ID:", entryList[0].Id, " joins into my group")
 		} else {
 			MembershipList = entryList
+			InfoLog.Println("Join into the group with Member ID:", MembershipList[getIx(LocalIp)].Id)
 		}
 		mutex.Unlock()
-		fmt.Println("MembershipList in listenToIntro Now:", MembershipList)
+		//fmt.Println("MembershipList in listenToIntro Now:", MembershipList)
 	}
 }
 
@@ -150,31 +166,31 @@ func broadCast(entry MemEntry) {
 		if member.IpAddr != LocalIp {
 			addr, err := net.ResolveUDPAddr("udp", member.IpAddr+":"+JoinPort)
 			if err != nil {
-				fmt.Println("Can not resolve addr during broadCast:", err)
+				ErrorLog.Println("Can not resolve addr during broadCast:", err)
 				os.Exit(1)
 			}
 			conn, err := net.DialUDP("udp", nil, addr)
 			if err != nil {
-				fmt.Println("Can not dialUDP during broadCast:", err)
+				ErrorLog.Println("Can not dialUDP during broadCast:", err)
 				os.Exit(1)
 			}
 			defer conn.Close()
 			if member.IpAddr != entry.IpAddr {
 				err = json.NewEncoder(&bufOther).Encode(MemberNew)
 				if err != nil {
-					fmt.Println("Can not encodeToOther during broadcast:", err)
+					ErrorLog.Println("Can not encodeToOther during broadcast:", err)
 					os.Exit(1)
 				}
 				conn.Write(bufOther.Bytes())
-				fmt.Println("In broadcast!", string(bufOther.Bytes()))
+				//fmt.Println("In broadcast!", string(bufOther.Bytes()))
 			} else {
 				err = json.NewEncoder(&bufNew).Encode(MembershipList)
 				if err != nil {
-					fmt.Println("Can not encode during broadCastToNew:", err)
+					ErrorLog.Println("Can not encode during broadCastToNew:", err)
 					os.Exit(1)
 				}
 				conn.Write(bufNew.Bytes())
-				fmt.Println("In broadcast!", string(bufNew.Bytes()))
+				//fmt.Println("In broadcast!", string(bufNew.Bytes()))
 			}
 		}
 	}
@@ -189,7 +205,7 @@ func checkTs(Mentry MesInfoEntry) bool {
 			t2 := Mentry.Timestamp
 			time1, err := time.Parse("2006-01-02 15:04:05", t1)
 			time2, err := time.Parse("2006-01-02 15:04:05", t2)
-			if err == nil && time1.Before(time2) {
+			if err == nil && time1.After(time2) {
 				checkVal = false
 			}
 		}
@@ -208,7 +224,7 @@ func introAddNode() {
 
 	conn, err := net.ListenUDP("udp", addr)
 	if err != nil {
-		fmt.Println("Can not listen:", err)
+		ErrorLog.Println("Can not listen:", err)
 		os.Exit(1)
 	}
 	defer conn.Close()
@@ -219,10 +235,10 @@ func introAddNode() {
 		n, _, err := conn.ReadFromUDP(buf)
 		err = json.NewDecoder(bytes.NewReader(buf[:n])).Decode(&Mentry)
 		if err != nil {
-			fmt.Println("Json decode failed:", err)
+			ErrorLog.Println("Json decode failed:", err)
 			os.Exit(1)
 		}
-		fmt.Println("IntroAddNode:", Mentry)
+		//fmt.Println("IntroAddNode:", Mentry)
 		formatTimeStr := time.Unix(time.Now().Unix(), 0).Format("2006-01-02 15:04:05")
 		ip := Mentry.IpAddr
 		entry := MemEntry{
@@ -317,15 +333,17 @@ func checkAck(relativeIx int) {
 
 	//ACKtimers[relativeIx-1] = time.NewTimer(ACK_TIMEOUT)
 	ACKtimers[relativeIx-1].Reset(ACK_TIMEOUT)	// !!!
-	<-ACKtimers[relativeIx-1].C 	// waiting to be triggered
+	<-ACKtimers[relativeIx-1].C 				// waiting to be triggered
 
 	mutex.Lock()
 	if len(MembershipList) >= MIN_LIST_SIZE && getRelativeIx(relativeIP) == relativeIx && resetTimerFlags[relativeIx-1] != 1 {
 		/* Failure detected first time */
-		fmt.Println("Failure detected at IpAddr : ", relativeIP)
+		//fmt.Println("Failure detected at IpAddr : ", relativeIP)
+		ErrorLog.Println("Fail to detect at IpAddr:", relativeIP)
 		targetIx := getIx(relativeIP)
 		node := MemEntry{MembershipList[targetIx].Id, relativeIP}
 		PiggybackedList = append(PiggybackedList, node)
+		InfoLog.Println("Detect! Node ID:", node.Id, "fails!")
 		/* Update MembershipList */
 		MembershipList = append(MembershipList[:targetIx], MembershipList[targetIx+1:]...)
 		
@@ -336,7 +354,7 @@ func checkAck(relativeIx int) {
 		fmt.Println("Force stopping other timers :", string(relativeIx))
 		for i := 1; i < 3; i++ {
 			resetTimerFlags[i] = 1
-			ACKtimers[i].Reset(0)		// !!!
+			ACKtimers[i].Reset(0)	// !!!
 		}
 	} else {
 		resetTimerFlags[relativeIx-1] = 0
@@ -354,12 +372,12 @@ func checkAck(relativeIx int) {
 func listenMessages() {
 	addr, err := net.ResolveUDPAddr("udp", ":"+MessagePort)
 	if err != nil {
-		fmt.Println("Can not resolve addr during listenMessages:", err)
+		ErrorLog.Println("Can not resolve addr during listenMessages:", err)
 		os.Exit(1)
 	}
 	conn, err := net.ListenUDP("udp", addr)
 	if err != nil {
-		fmt.Println("Can not listenUDP during listenMessages:", err)
+		ErrorLog.Println("Can not listenUDP during listenMessages:", err)
 		os.Exit(1)
 	}
 	defer conn.Close()
@@ -371,7 +389,7 @@ func listenMessages() {
 		err = json.NewDecoder(bytes.NewReader(buf[:n])).Decode(&msg)
 		//fmt.Println("IN listenMessages:", msg)
 		if err != nil {
-			fmt.Println("Can not decode during listenMessages:", err)
+			ErrorLog.Println("Can not decode during listenMessages:", err)
 			os.Exit(1)
 		}
 		switch msg.Type {
@@ -393,13 +411,13 @@ func listenMessages() {
 			if len(msg.PgyBackList) > 0 {
 				for _, member := range msg.PgyBackList {
 					targetIx := getIx(member.IpAddr)
-					if ( targetIx != -1 && member.Id == MembershipList[targetIx].Id )  {
+					if targetIx != -1 && member.Id == MembershipList[targetIx].Id  {
 						/* Update MembershipList */
 						resetCorrespondingTimers()
 						MembershipList = append(MembershipList[:targetIx], MembershipList[targetIx+1:]...)
 						/* Update PiggybackedList : append */
 						PiggybackedList = append(PiggybackedList, member)
-
+						InfoLog.Println("Receive Fail Info! Node ID: ", member.Id, "fails")
 					} else {
 						var pgbIx = -1
 						for i, element := range PiggybackedList {
@@ -418,7 +436,7 @@ func listenMessages() {
 			mutex.Unlock()
 
 		case "ACK":
-			fmt.Println("Receive ACK from :", msg.IpAddr, " --- MembershipList num : ", len(MembershipList))
+			//fmt.Println("Receive ACK from :", msg.IpAddr, " --- MembershipList num : ", len(MembershipList))
 			relativeIx := getRelativeIx(msg.IpAddr)
 			if relativeIx != -1 {
 				ACKtimers[relativeIx - 1].Reset(ACK_TIMEOUT)
@@ -426,7 +444,8 @@ func listenMessages() {
 
 		case "Leave":
 			/* Update MembershipList */
-			fmt.Println("Receive Leave from :", msg.IpAddr, " --- MembershipList num : ", len(MembershipList))
+			InfoLog.Println("Receive leave meassage! Node IP:", msg.IpAddr, "leaves the group")
+			//fmt.Println("Receive Leave from :", msg.IpAddr, " --- MembershipList num : ", len(MembershipList))
 			mutex.Lock()
 			targetIx := getIx(msg.IpAddr)
 			if targetIx != -1 {
@@ -509,6 +528,7 @@ func leaveMemship() {
 		}
 	}
 	sendMessage(leaveMessage, receiverList, MessagePort)
+	InfoLog.Println("Current IP:", LocalIp, "is going to leave the group")
 }
 
 func getID() {
@@ -541,6 +561,12 @@ func main() {
 
 	initMembershipList()
 
+	file, err := os.OpenFile("../log/membership.log", os.O_RDWR|os.O_APPEND|os.O_CREATE, 0644)
+	if err != nil {
+		fmt.Println("Error during create log file", err)
+		os.Exit(1)
+	
+	defer file.Close()
 	ACKtimers[0] = time.NewTimer(ACK_TIMEOUT)
 	ACKtimers[1] = time.NewTimer(ACK_TIMEOUT)
 	ACKtimers[2] = time.NewTimer(ACK_TIMEOUT)
