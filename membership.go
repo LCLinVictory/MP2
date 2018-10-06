@@ -279,9 +279,9 @@ func resetCorrespondingTimers() {
 	resetTimerFlags[0] = 1
 	resetTimerFlags[1] = 1
 	resetTimerFlags[2] = 1
-	timers[0].Reset(0)
-	timers[1].Reset(0)
-	timers[2].Reset(0)
+	ACKtimers[0].Reset(0)
+	ACKtimers[1].Reset(0)
+	ACKtimers[2].Reset(0)
 }
 
 /*
