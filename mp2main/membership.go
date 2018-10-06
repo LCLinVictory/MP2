@@ -531,6 +531,7 @@ func getGrepLog() {
 		IPList[i] = element.IpAddr
 	}
 
+	fmt.Println("Your input is :", strMessage)
 	mp1client.RunClientmain(strMessage, IPList)
 }
 
