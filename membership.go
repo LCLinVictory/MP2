@@ -12,6 +12,8 @@ import (
 	"sync"
 	"strings"
 	"math/rand"
+	"../mp1server/"
+	"../mp1client/"
 )
 
 type MesInfoEntry struct {
@@ -90,6 +92,7 @@ func sendMessage(mesInfo MesInfoEntry, receiverList []string, port string) {
 		}
 
 		/* Packet loss simulate */
+		// https://blog.csdn.net/wo198711203217/article/details/72900742
 		rand.Seed(time.Now().UnixNano())
 		tmpflag := rand.Intn(100)
 		if tmpflag >= PACKET_LOSS_RATE * 100 {
@@ -268,7 +271,6 @@ func getIx(targetIP string) int {
 	}
 	return -1
 }
-
 
 /*
  * This function sends Ping messages to next three successive neighbours every PING_PERIOD
@@ -472,6 +474,7 @@ func ProcessInput() {
 		fmt.Println("b) list id")
 		fmt.Println("c) join the group")
 		fmt.Println("d) leave the group")
+		fmt.Println("e) grep the log")
 		fmt.Println("Please input one option:")
 		input, err := reader.ReadString('\n')
 		if err != nil {
@@ -508,8 +511,27 @@ func ProcessInput() {
 				ACKtimers[i].Stop()
 			}
 			*/
+		case "e":
+			getGrepLog()
 		}
 	}
+}
+
+func getGrepLog() {
+	fmt.Println("Input the keyword : ")
+	reader := bufio.NewReader(os.Stdin)
+	strMessage, err := reader.ReadString('\n')
+	if err != nil {
+		fmt.Println("err during read input:", err, ". Please try again.")
+		return
+	}
+
+	IPList = make([]string, len(MembershipList))
+	for i, element := range MembershipList {
+		tmpList[i] = element.IpAddr
+	}
+
+	mp1client.RunClientmain(strMessage, IPList)
 }
 
 func leaveMemship() {
@@ -581,6 +603,7 @@ func main() {
 	for i := 1; i <= 3; i++ {
 		go checkAck(i)
 	}
+	go mp1server.RunServermain()
 
 	ProcessInput()
 }
