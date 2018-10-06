@@ -567,6 +567,8 @@ func main() {
 		os.Exit(1)
 	}
 	defer file.Close()
+	InfoLog = log.New(file, "[MemberInfo]", log.LstdFlags)
+	ErrorLog = log.New(file, "[ErrorInfo]", log.LstdFlags)
 	ACKtimers[0] = time.NewTimer(ACK_TIMEOUT)
 	ACKtimers[1] = time.NewTimer(ACK_TIMEOUT)
 	ACKtimers[2] = time.NewTimer(ACK_TIMEOUT)
