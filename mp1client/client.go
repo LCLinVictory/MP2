@@ -129,4 +129,5 @@ func RunClientmain(strMessage string, IPList []string) {
 	//compute runtime
 	elapsed := time.Since(t1)
 	fmt.Println("Total Run Time:", elapsed)
+	close(c)
 }
