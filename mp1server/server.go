@@ -23,7 +23,7 @@ func (s *GrepStr) GrepResult(req GreReq, reply *string) error {
 	commandName := "grep"
 	params := []string{"-n"}
 	//path := "/home/yidanli2/distributed-group-membership/log/" + req.Filename
-	path := "/home/yidanli2/lcl/log/" + req.Filename
+	path := "../log/" + req.Filename
 	fmt.Println("Path = ", path)
 	params = append(params, req.RegPat, path)
 	cmd := exec.Command(commandName, params...)
