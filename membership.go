@@ -253,9 +253,6 @@ func sendPing() {
 			receiverList[1] = MembershipList[(getIx(LocalIp)+2)%MemshipNum].IpAddr
 			receiverList[2] = MembershipList[(getIx(LocalIp)+3)%MemshipNum].IpAddr
 			sendMessage(PingMessage, receiverList, MessagePort)
-			for i := 1; i <= 3; i++ {
-				go checkAck(i)
-			}
 		}
 		time.Sleep(PING_PERIOD)
 	}
@@ -317,7 +314,7 @@ func checkAck(relativeIx int) {
 	}
 
 	mutex.Unlock()
-	//go checkAck(relativeIx)
+	go checkAck(relativeIx)
 
 }
 
@@ -522,6 +519,9 @@ func main() {
 
 	go listenMessages()
 	go sendPing()
+	for i := 1; i <= 3; i++ {
+		go checkAck(i)
+	}
 
 	ProcessInput()
 }
