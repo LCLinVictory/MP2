@@ -26,6 +26,7 @@ func (s *GrepStr) GrepResult(req GreReq, reply *string) error {
 	path := "../log/" + req.Filename
 	//fmt.Println("Path = ", path)
 	params = append(params, req.RegPat, path)
+	fmt.Println("grep -> ", params)
 	cmd := exec.Command(commandName, params...)
 
 	//output the grep results
