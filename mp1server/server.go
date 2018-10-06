@@ -24,7 +24,7 @@ func (s *GrepStr) GrepResult(req GreReq, reply *string) error {
 	params := []string{"-n"}
 	//path := "/home/yidanli2/distributed-group-membership/log/" + req.Filename
 	path := "../log/" + req.Filename
-	fmt.Println("Path = ", path)
+	//fmt.Println("Path = ", path)
 	params = append(params, req.RegPat, path)
 	cmd := exec.Command(commandName, params...)
 
