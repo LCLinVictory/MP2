@@ -180,6 +180,23 @@ func broadCast(entry MemEntry) {
 	}
 }
 
+// https://www.jb51.net/article/64705.htm
+func checkTs(Mentry MesInfoEntry) bool {
+	checkVal := false
+	for _, member := range MembershipList {
+		if member.IpAddr == Mentry.IpAddr {
+			t1 := strings.Split(member.IpAddr, "+")[1]
+			t2 := Mentry.Timestamp
+			time1, err := time.Parse("2006-01-02 15:04:05", t1)
+			time2, err := time.Parse("2006-01-02 15:04:05", t2)
+			if err == nil && time1.Before(time2) {
+				checkVal = true
+			}
+		}
+	}
+	return checkVal
+}
+
 // introducer waits for new node
 func introAddNode() {
 
@@ -213,11 +230,13 @@ func introAddNode() {
 			IpAddr: ip,
 		}
 		/*check timestamp pass*/
-		mutex.Lock()
-		resetCorrespondingTimers()
-		MembershipList = append(MembershipList, entry)
-		mutex.Unlock()
-		broadCast(entry)
+		if checkTs(Mentry) {
+			mutex.Lock()
+			resetCorrespondingTimers()
+			MembershipList = append(MembershipList, entry)
+			mutex.Unlock()
+			broadCast(entry)
+		}
 	}
 }
 
