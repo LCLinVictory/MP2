@@ -482,7 +482,7 @@ func ProcessInput() {
 			fmt.Println("err during read input:", err, ". Please try again.")
 			continue
 		}
-		input = strings.Replace(input, "\n", "", -1)
+		input = strings.Replace(input, "\n", "", -1)	// delete line feeds
 		switch input {
 		case "a":
 			if len(MembershipList) > 1 || LocalIp == JoinIp {
@@ -522,6 +522,7 @@ func getGrepLog() {
 	fmt.Println("Input the keyword : ")
 	reader := bufio.NewReader(os.Stdin)
 	strMessage, err := reader.ReadString('\n')
+	strMessage = strings.Replace(strMessage, "\n", "", -1)	// delete line feeds
 	if err != nil {
 		fmt.Println("err during read input:", err, ". Please try again.")
 		return
