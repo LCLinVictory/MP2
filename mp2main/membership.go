@@ -586,7 +586,8 @@ func main() {
 
 	initMembershipList()
 
-	file, err := os.OpenFile("../log/membership.log", os.O_RDWR|os.O_APPEND|os.O_CREATE, 0644)
+	//file, err := os.OpenFile("../log/membership.log", os.O_RDWR|os.O_APPEND|os.O_CREATE, 0644)
+	file, err := os.OpenFile("../log/membership.log", os.O_RDWR|os.O_CREATE, 0644)
 	if err != nil {
 		fmt.Println("Error during create log file", err)
 		os.Exit(1)
