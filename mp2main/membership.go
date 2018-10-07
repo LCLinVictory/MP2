@@ -245,13 +245,6 @@ func getRelativeIx(targetIP string) int {
 	return -1
 }
 
-func resetCorrespondingTimers() {
-	for i := 0; i < 3; i++ {
-		resetTimerFlags[i] = 1
-		ACKtimers[i].Reset(0)
-	}
-}
-
 /*
  * This function sends Ping messages to next three successive neighbours every PING_PERIOD
  */
@@ -294,7 +287,6 @@ func checkAck(relativeIx int) {
 	mutex.Lock()
 	if len(MembershipList) >= MIN_LIST_SIZE && getRelativeIx(relativeIP) == relativeIx && resetTimerFlags[relativeIx-1] != 1 {
 		/* Failure detected first time */
-		//fmt.Println("Failure detected at IpAddr : ", relativeIP)
 		ErrorLog.Println("Fail to detect at IpAddr:", relativeIP)
 		targetIx := getIx(relativeIP)
 		node := MemEntry{MembershipList[targetIx].Id, relativeIP}
@@ -356,7 +348,10 @@ func introAddNode() {
 		/*check timestamp pass*/
 		if checkTs(Mentry) {
 			mutex.Lock()
-			resetCorrespondingTimers()
+			for i := 0; i < 3; i++ {
+				resetTimerFlags[i] = 1
+				ACKtimers[i].Reset(0)
+			}
 			MembershipList = append(MembershipList, entry)
 			InfoLog.Println("Member ID:", entry.Id, " joins into my group")
 			mutex.Unlock()
@@ -413,7 +408,10 @@ func listenMessages() {
 					targetIx := getIx(member.IpAddr)
 					if targetIx != -1 && member.Id == MembershipList[targetIx].Id  {
 						/* Update MembershipList */
-						resetCorrespondingTimers()
+						for i := 0; i < 3; i++ {
+							resetTimerFlags[i] = 1
+							ACKtimers[i].Reset(0)
+						}
 						MembershipList = append(MembershipList[:targetIx], MembershipList[targetIx+1:]...)
 						/* Update PiggybackedList : append */
 						PiggybackedList = append(PiggybackedList, member)
