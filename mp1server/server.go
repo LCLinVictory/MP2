@@ -37,6 +37,7 @@ func (s *GrepStr) GrepResult(req GreReq, reply *string) error {
 	}
 	*reply = string(output)
 	*reply = strings.TrimSpace(*reply) //delete the blank line
+	fmt.Println("grep result : ", reply)
 	return nil
 }
 
