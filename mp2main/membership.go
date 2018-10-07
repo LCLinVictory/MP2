@@ -199,7 +199,9 @@ func broadCast(entry MemEntry) {
 	}
 }
 
-// https://www.jb51.net/article/64705.htm
+/*
+ * https://www.jb51.net/article/64705.htm
+ */
 func checkTs(Mentry MesInfoEntry) bool {
 	checkVal := true
 	for _, member := range MembershipList {
@@ -214,6 +216,109 @@ func checkTs(Mentry MesInfoEntry) bool {
 		}
 	}
 	return checkVal
+}
+
+/*
+ * Get index of current host
+ */
+func getIx(targetIP string) int {
+//func getIx() int {
+	for i, element := range MembershipList {
+		if targetIP == element.IpAddr {
+			return i
+		}
+	}
+	return -1
+}
+
+/*
+ * Function to give the relative location of the host with respect to the current node in the ML
+ */
+func getRelativeIx(targetIP string) int {
+	localIx := getIx(LocalIp)
+	targetIx := getIx(targetIP)
+	MemshipNum := len(MembershipList)
+	relativeIx := (targetIx - localIx) % MemshipNum
+	if relativeIx == 1 || relativeIx == 2 || relativeIx == 3 {
+		return relativeIx
+	}
+	return -1
+}
+
+func resetCorrespondingTimers() {
+	for i := 0; i < 3; i++ {
+		resetTimerFlags[i] = 1
+		ACKtimers[i].Reset(0)
+	}
+}
+
+/*
+ * This function sends Ping messages to next three successive neighbours every PING_PERIOD
+ */
+func sendPing() {
+	for {
+		MemshipNum := len(MembershipList)
+		if MemshipNum >= MIN_LIST_SIZE {
+			var receiverList = make([]string, 3)
+			formatTimeStr := time.Unix(time.Now().Unix(), 0).Format("2006-01-02 15:04:05")
+			PingMessage := MesInfoEntry{
+				IpAddr:  		LocalIp,
+				Timestamp:		formatTimeStr,
+				Type:			"PING",
+				PgyBackList:	PiggybackedList,
+			}
+			for i := 0; i < 3; i++ {
+				receiverList[i] = MembershipList[(getIx(LocalIp)+i+1)%MemshipNum].IpAddr
+			}
+			sendMessage(PingMessage, receiverList, MessagePort)
+		}
+		time.Sleep(PING_PERIOD)
+	}
+}
+
+/*
+ * This function would ...
+ * (i+1)%N, (i+2)%N, (i+3)%N. N=Total number of nodesin the memeber. This method is called for relativeindex 1,2 and 3
+ */
+func checkAck(relativeIx int) {
+
+	for len(MembershipList) < MIN_LIST_SIZE {
+		time.Sleep(100 * time.Millisecond)
+	}
+
+	relativeIP := MembershipList[(getIx(LocalIp)+relativeIx)%len(MembershipList)].IpAddr
+
+	ACKtimers[relativeIx-1].Reset(ACK_TIMEOUT)	// !!!
+	<-ACKtimers[relativeIx-1].C 				// waiting to be triggered
+
+	mutex.Lock()
+	if len(MembershipList) >= MIN_LIST_SIZE && getRelativeIx(relativeIP) == relativeIx && resetTimerFlags[relativeIx-1] != 1 {
+		/* Failure detected first time */
+		//fmt.Println("Failure detected at IpAddr : ", relativeIP)
+		ErrorLog.Println("Fail to detect at IpAddr:", relativeIP)
+		targetIx := getIx(relativeIP)
+		node := MemEntry{MembershipList[targetIx].Id, relativeIP}
+		PiggybackedList = append(PiggybackedList, node)
+		InfoLog.Println("Detect! Node ID:", node.Id, "fails!")
+		/* Update MembershipList */
+		MembershipList = append(MembershipList[:targetIx], MembershipList[targetIx+1:]...)
+		
+	}
+	// None of of the Events should be updating the MembershipList , only then this condition would be set.
+	// Reset all the other timers (which the current node is monitoring) as well if the above condition is met
+	if resetTimerFlags[relativeIx-1] == 0 {
+		InfoLog.Println("Force stopping other timers :", string(relativeIx))
+		for i := 1; i < 3; i++ {
+			resetTimerFlags[i] = 1
+			ACKtimers[i].Reset(0)	// !!!
+		}
+	} else {
+		resetTimerFlags[relativeIx-1] = 0
+	}
+
+	mutex.Unlock()
+	go checkAck(relativeIx)
+
 }
 
 // introducer waits for new node
@@ -258,114 +363,6 @@ func introAddNode() {
 			broadCast(entry)
 		}
 	}
-}
-
-/*
- * Get index of current host
- */
-func getIx(targetIP string) int {
-//func getIx() int {
-	for i, element := range MembershipList {
-		if targetIP == element.IpAddr {
-			return i
-		}
-	}
-	return -1
-}
-
-/*
- * This function sends Ping messages to next three successive neighbours every PING_PERIOD
- */
-func sendPing() {
-	for {
-		MemshipNum := len(MembershipList)
-		if MemshipNum >= MIN_LIST_SIZE {
-			var receiverList = make([]string, 3)
-			formatTimeStr := time.Unix(time.Now().Unix(), 0).Format("2006-01-02 15:04:05")
-			PingMessage := MesInfoEntry{
-				IpAddr:  		LocalIp,
-				Timestamp:		formatTimeStr,
-				Type:			"PING",
-				PgyBackList:	PiggybackedList,
-			}
-			receiverList[0] = MembershipList[(getIx(LocalIp)+1)%MemshipNum].IpAddr
-			receiverList[1] = MembershipList[(getIx(LocalIp)+2)%MemshipNum].IpAddr
-			receiverList[2] = MembershipList[(getIx(LocalIp)+3)%MemshipNum].IpAddr
-			sendMessage(PingMessage, receiverList, MessagePort)
-		}
-		time.Sleep(PING_PERIOD)
-	}
-}
-
-/*
- * Function to give the relative location of the host with respect to the current node in the ML
- */
-func getRelativeIx(targetIP string) int {
-	localIx := getIx(LocalIp)
-	MemshipNum := len(MembershipList)
-	if strings.Compare(MembershipList[(localIx+1)%MemshipNum].IpAddr, targetIP) == 0 {
-		return 1
-	} else if strings.Compare(MembershipList[(localIx+2)%MemshipNum].IpAddr, targetIP) == 0 {
-		return 2
-	} else if strings.Compare(MembershipList[(localIx+3)%MemshipNum].IpAddr, targetIP) == 0 {
-		return 3
-	}
-	return -1
-}
-
-func resetCorrespondingTimers() {
-	resetTimerFlags[0] = 1
-	resetTimerFlags[1] = 1
-	resetTimerFlags[2] = 1
-	ACKtimers[0].Reset(0)
-	ACKtimers[1].Reset(0)
-	ACKtimers[2].Reset(0)
-}
-
-/*
- * This function would ...
- * (i+1)%N, (i+2)%N, (i+3)%N. N=Total number of nodesin the memeber. This method is called for relativeindex 1,2 and 3
- */
-func checkAck(relativeIx int) {
-
-	for len(MembershipList) < MIN_LIST_SIZE {
-		time.Sleep(100 * time.Millisecond)
-	}
-
-	relativeIP := MembershipList[(getIx(LocalIp)+relativeIx)%len(MembershipList)].IpAddr
-
-	//ACKtimers[relativeIx-1] = time.NewTimer(ACK_TIMEOUT)
-	ACKtimers[relativeIx-1].Reset(ACK_TIMEOUT)	// !!!
-	<-ACKtimers[relativeIx-1].C 				// waiting to be triggered
-
-	mutex.Lock()
-	if len(MembershipList) >= MIN_LIST_SIZE && getRelativeIx(relativeIP) == relativeIx && resetTimerFlags[relativeIx-1] != 1 {
-		/* Failure detected first time */
-		//fmt.Println("Failure detected at IpAddr : ", relativeIP)
-		ErrorLog.Println("Fail to detect at IpAddr:", relativeIP)
-		targetIx := getIx(relativeIP)
-		node := MemEntry{MembershipList[targetIx].Id, relativeIP}
-		PiggybackedList = append(PiggybackedList, node)
-		InfoLog.Println("Detect! Node ID:", node.Id, "fails!")
-		/* Update MembershipList */
-		MembershipList = append(MembershipList[:targetIx], MembershipList[targetIx+1:]...)
-		
-	}
-	// None of of the Events should be updating the MembershipList , only then this condition would be set.
-	// Reset all the other timers (which the current node is monitoring) as well if the above condition is met
-	if resetTimerFlags[relativeIx-1] == 0 {
-		InfoLog.Println("Force stopping other timers :", string(relativeIx))
-		for i := 1; i < 3; i++ {
-			resetTimerFlags[i] = 1
-			ACKtimers[i].Reset(0)	// !!!
-		}
-	} else {
-		resetTimerFlags[relativeIx-1] = 0
-	}
-
-	mutex.Unlock()
-	go checkAck(relativeIx)
-
 }
 
 /*
@@ -460,64 +457,6 @@ func listenMessages() {
 	}
 }
 
-
-func ProcessInput() {
-
-	if LocalIp == JoinIp {
-		go introAddNode()
-	}
-
-	// https://blog.csdn.net/zzzz_ing/article/details/53206096
-	reader := bufio.NewReader(os.Stdin)
-
-	for {
-		fmt.Println("a) list the membership list")
-		fmt.Println("b) list id")
-		fmt.Println("c) join the group")
-		fmt.Println("d) leave the group")
-		fmt.Println("e) grep the log")
-		fmt.Println("Please input one option:")
-		input, err := reader.ReadString('\n')
-		if err != nil {
-			fmt.Println("err during read input:", err, ". Please try again.")
-			continue
-		}
-		input = strings.Replace(input, "\n", "", -1)	// delete line feeds
-		switch input {
-		case "a":
-			if len(MembershipList) > 1 || LocalIp == JoinIp {
-				listMembershipList()
-			} else {
-				fmt.Println("You have not joined the network yet !")
-			}
-		case "b":
-			getID()
-		case "c":
-			if LocalIp == JoinIp {
-				fmt.Println("You are the introducer! You are already in the network!")
-			} else if len(MembershipList) > 1 {
-				fmt.Println("You are already in the network!")
-			} else {
-				go addToMemship()
-				go listenToIntro()
-			}
-		case "d":
-			if len(MembershipList) > 1 {
-				leaveMemship()
-			}
-			os.Exit(0)
-			/*
-			initMembershipList()
-			for i := 0; i < 3; i++ {
-				ACKtimers[i].Stop()
-			}
-			*/
-		case "e":
-			getGrepLog()
-		}
-	}
-}
-
 func getGrepLog() {
 	fmt.Println("Input the keyword : ")
 	reader := bufio.NewReader(os.Stdin)
@@ -556,18 +495,68 @@ func leaveMemship() {
 	InfoLog.Println("Current IP:", LocalIp, "is going to leave the group")
 }
 
-func getID() {
-	for _, member := range MembershipList {
-		if member.IpAddr == LocalIp {
-			fmt.Println("Id is:", member.Id)
-		}
-	}
-}
-
 func listMembershipList() {
 	fmt.Println("Id\tIP")
 	for _, member := range MembershipList {
 		fmt.Println(member.Id, "\t", member.IpAddr)
+	}
+}
+
+func ProcessInput() {
+
+	if LocalIp == JoinIp {
+		go introAddNode()	/* only introducer run */
+	}
+
+	/* https://blog.csdn.net/zzzz_ing/article/details/53206096 */
+	reader := bufio.NewReader(os.Stdin)
+
+	for {
+		fmt.Println("a) list the membership list")
+		fmt.Println("b) list id")
+		fmt.Println("c) join the group")
+		fmt.Println("d) leave the group")
+		fmt.Println("e) grep the log")
+		fmt.Println("Please input one option:")
+		input, err := reader.ReadString('\n')
+		if err != nil {
+			fmt.Println("err during read input:", err, ". Please try again.")
+			continue
+		}
+		input = strings.Replace(input, "\n", "", -1)	// delete line feeds
+		switch input {
+		case "a":
+			if len(MembershipList) > 1 || LocalIp == JoinIp {
+				listMembershipList()
+			} else {
+				fmt.Println("You have not joined the network yet !")
+			}
+		case "b":
+			fmt.Println("Id is:", MembershipList[getIx[LocalIp]].Id)
+			
+		case "c":
+			if LocalIp == JoinIp {
+				fmt.Println("You are the introducer! You are already in the network!")
+			} else if len(MembershipList) > 1 {
+				fmt.Println("You are already in the network!")
+			} else {
+				go addToMemship()
+				go listenToIntro()
+			}
+		case "d":
+			if len(MembershipList) > 1 {
+				leaveMemship()
+			}
+			os.Exit(0)
+			/*
+			initMembershipList()
+			for i := 0; i < 3; i++ {
+				ACKtimers[i].Stop()
+			}
+			*/
+		case "e":
+			getGrepLog()
+		}
 	}
 }
 
@@ -586,6 +575,7 @@ func main() {
 
 	initMembershipList()
 
+	/* Init the log file */
 	//file, err := os.OpenFile("../log/membership.log", os.O_RDWR|os.O_APPEND|os.O_CREATE, 0644)
 	file, err := os.OpenFile("../log/membership.log", os.O_RDWR|os.O_CREATE, 0644)
 	if err != nil {
@@ -595,17 +585,17 @@ func main() {
 	defer file.Close()
 	InfoLog = log.New(file, "[MemberInfo]", log.LstdFlags)
 	ErrorLog = log.New(file, "[ErrorInfo]", log.LstdFlags)
-	ACKtimers[0] = time.NewTimer(ACK_TIMEOUT)
-	ACKtimers[1] = time.NewTimer(ACK_TIMEOUT)
-	ACKtimers[2] = time.NewTimer(ACK_TIMEOUT)
-	ACKtimers[0].Stop()
-	ACKtimers[1].Stop()
-	ACKtimers[2].Stop()
 
+	for i := 0; i < 3; i++ {
+		ACKtimers[i] = time.NewTimer(ACK_TIMEOUT)
+		ACKtimers[i].Stop()
+	}
+
+	/* Run the resident process */
 	go listenMessages()
 	go sendPing()
 	for i := 1; i <= 3; i++ {
-		go checkAck(i)
+		go checkAck(i)	// relativeIx is 1~3
 	}
 	go mp1server.RunServermain()
 
