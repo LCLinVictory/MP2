@@ -253,6 +253,7 @@ func introAddNode() {
 			mutex.Lock()
 			resetCorrespondingTimers()
 			MembershipList = append(MembershipList, entry)
+			InfoLog.Println("Member ID:", entry.Id, " joins into my group")
 			mutex.Unlock()
 			broadCast(entry)
 		}
