@@ -22,23 +22,21 @@ func (s *GrepStr) GrepResult(req GreReq, reply *string) error {
 
 	commandName := "grep"
 	params := []string{"-n"}
-	//path := "/home/yidanli2/distributed-group-membership/log/" + req.Filename
 	path := "../log/" + req.Filename
 	//fmt.Println("Path = ", path)
 	params = append(params, req.RegPat, path)
-	fmt.Println("grep -> ", params)
+	//fmt.Println("grep -> ", params)
 	cmd := exec.Command(commandName, params...)
 
-	//output the grep results
+	/* output the grep results */
 	output, err := cmd.Output()
 	if err != nil {
-		fmt.Println("Grep Error")
-		fmt.Println(err)
+		fmt.Println("Grep Error: ", err)
 	}
-	fmt.Println("cmd output: ", string(output))
+	//fmt.Println("cmd output: ", string(output))
 	*reply = string(output)
 	*reply = strings.TrimSpace(*reply) //delete the blank line
-	fmt.Println("grep result : ", *reply)
+	//fmt.Println("grep result : ", reply)
 	return nil
 }
 
