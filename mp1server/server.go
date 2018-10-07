@@ -35,6 +35,7 @@ func (s *GrepStr) GrepResult(req GreReq, reply *string) error {
 		fmt.Println("Grep Error")
 		fmt.Println(err)
 	}
+	fmt.Println("cmd output: ", string(output))
 	*reply = string(output)
 	*reply = strings.TrimSpace(*reply) //delete the blank line
 	fmt.Println("grep result : ", *reply)
