@@ -512,13 +512,13 @@ func ProcessInput() {
 	reader := bufio.NewReader(os.Stdin)
 
 	for {
-		fmt.Println("#---------------------------------------#")
-		if len(MembershipList) > 1 {
+		fmt.Println("#--------------------------------#")
+		if len(MembershipList) > 1 || LocalIp == JoinIp {
 			fmt.Println("# Satus -> Online")
 		} else {
 			fmt.Println("# Satus -> Offline")
 		}
-		fmt.Println("#---------------------------------------#")
+		fmt.Println("#--------------------------------#")
 		fmt.Println("a) list the membership list")
 		fmt.Println("b) list id")
 		fmt.Println("c) join the group")
