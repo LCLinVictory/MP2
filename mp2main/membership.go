@@ -532,7 +532,7 @@ func ProcessInput() {
 				fmt.Println("You have not joined the network yet !")
 			}
 		case "b":
-			fmt.Println("Id is:", MembershipList[getIx[LocalIp]].Id)
+			fmt.Println("Id is:", MembershipList[getIx(LocalIp)].Id)
 			
 		case "c":
 			if LocalIp == JoinIp {
