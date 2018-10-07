@@ -549,6 +549,7 @@ func ProcessInput() {
 			} else {
 				go addToMemship()
 				go listenToIntro()
+				time.Sleep(500 * time.Millisecond)
 			}
 		case "d":
 			if len(MembershipList) > 1 {
