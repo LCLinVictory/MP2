@@ -96,7 +96,7 @@ func RunClientmain(strMessage string, IPList []string) {
 	//nodeServerList := readServerFromFile("serverInfo.txt")
 	nodeServerList := []nodeInfo{}
 	for i, item := range IPList {
-		node := nodeInfo{i, item + ":9000"}
+		node := nodeInfo{i, item + ":9010"}
 		nodeServerList = append(nodeServerList, node)
 	}
 	c := make(chan GrepRes)
