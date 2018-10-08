@@ -1,4 +1,4 @@
-package tmp
+package main
 
 func initMembershipList() {
 	/* Init MembershipList */
