@@ -1,4 +1,4 @@
-package tmp
+package main
 
 // introducer waits for new node
 func introAddNode() {
