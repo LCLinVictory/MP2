@@ -1,4 +1,4 @@
-package mp2main
+package tmp
 
 // introducer waits for new node
 func introAddNode() {
