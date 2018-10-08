@@ -1,4 +1,4 @@
-package mp2main
+package tmp
 
 func ProcessInput() {
 
