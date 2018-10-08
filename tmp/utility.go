@@ -1,4 +1,4 @@
-package mp2main
+package main
 
 import (
 	"strings"
