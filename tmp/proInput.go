@@ -1,4 +1,4 @@
-package tmp
+package main
 
 func ProcessInput() {
 
