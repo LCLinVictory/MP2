@@ -52,7 +52,7 @@ func RunServermain() {
 	strMessage := new(GrepStr)
 	rpc.Register(strMessage)
 
-	tcpAddr, err := net.ResolveTCPAddr("tcp", ":9000")
+	tcpAddr, err := net.ResolveTCPAddr("tcp", ":9010")
 	checkError(err)
 
 	listener, err := net.ListenTCP("tcp", tcpAddr)
